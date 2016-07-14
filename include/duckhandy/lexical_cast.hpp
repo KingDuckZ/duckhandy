@@ -32,8 +32,8 @@
 #include <string>
 #include <ciso646>
 #include <climits>
-#include <boost/range/adaptor/reversed.hpp>
 #include <cstddef>
+#include <iterator>
 
 namespace dhandy {
 	namespace customize {
@@ -96,7 +96,8 @@ namespace dhandy {
 		inline T string_to_int (const F& parFrom) {
 			T retval(0);
 			T mul(1);
-			for (auto chara : boost::adaptors::reverse(parFrom)) {
+			for (auto it = std::rbegin(parFrom), itEND = std::rend(parFrom); it != itEND; ++it) {
+				const auto chara = *it;
 				retval += dhandy::customize::char_to_int<decltype(chara), T>::make(chara) * mul;
 				mul *= Tag<T>::base;
 			}
