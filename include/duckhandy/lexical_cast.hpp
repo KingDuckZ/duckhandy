@@ -19,8 +19,8 @@
 #define id942A6B5AB2AF443C82D4321775BFC9E8
 
 #include "compatibility.h"
-#include "helpers/sequence_bt.hpp"
-#include "helpers/MaxSizedArray.hpp"
+#include "sequence_bt.hpp"
+#include "MaxSizedArray.hpp"
 #include "sprout/math/log10.hpp"
 #include "sprout/math/log2.hpp"
 #include "sprout/math/pow.hpp"
@@ -97,7 +97,7 @@ namespace dhandy {
 			T retval(0);
 			T mul(1);
 			for (auto it = std::rbegin(parFrom), itEND = std::rend(parFrom); it != itEND; ++it) {
-				const auto chara = *it;
+				auto chara = *it;
 				retval += dhandy::customize::char_to_int<decltype(chara), T>::make(chara) * mul;
 				mul *= Tag<T>::base;
 			}
