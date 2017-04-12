@@ -24,6 +24,7 @@
 #include "sprout/math/log10.hpp"
 #include "sprout/math/log2.hpp"
 #include "sprout/math/pow.hpp"
+#include "sprout/math/abs.hpp"
 #include <type_traits>
 #include <utility>
 #include <limits>
@@ -96,12 +97,13 @@ namespace dhandy {
 		inline T string_to_int (const F& parFrom) {
 			T retval(0);
 			T mul(1);
-			for (auto it = std::rbegin(parFrom), itEND = std::rend(parFrom); it != itEND; ++it) {
+			const auto sgn = dhandy::customize::char_to_int<typename F::value_type, T>::sgn(parFrom);
+			for (auto it = std::rbegin(parFrom), itEND = std::rend(parFrom); it + (sgn < 0 ? 1 : 0) != itEND; ++it) {
 				auto chara = *it;
 				retval += dhandy::customize::char_to_int<decltype(chara), T>::make(chara) * mul;
 				mul *= Tag<T>::base;
 			}
-			return retval * dhandy::customize::char_to_int<typename F::value_type, T>::sgn(parFrom);
+			return retval * sgn;
 		};
 
 		template <typename T, bool LowerCase>
@@ -114,8 +116,8 @@ namespace dhandy {
 
 			static std::size_t count_digits ( T parValue ) a_pure;
 			static typename std::make_unsigned<T>::type make_unsigned ( T parValue ) a_pure;
-			static constexpr std::size_t count_digits_bt (std::size_t parNum) {
-				return (parNum == 0 ? 0 : static_cast<std::size_t>(sprout::log10(static_cast<double>(parNum)) / sprout::log10(static_cast<double>(base)))) + 1;
+			static constexpr std::size_t count_digits_bt (T parNum) {
+				return (parNum == 0 ? 0 : static_cast<std::size_t>(sprout::log10(sprout::abs(static_cast<long double>(parNum))) / sprout::log10(static_cast<double>(base)))) + 1;
 			}
 		};
 	} //namespace implem
@@ -135,8 +137,8 @@ namespace dhandy {
 			static std::size_t count_digits (T parValue) a_pure;
 
 			static typename std::make_unsigned<T>::type make_unsigned ( T parValue ) a_pure;
-			static constexpr std::size_t count_digits_bt (std::size_t parNum) {
-				return (parNum == 0 ? 0 : static_cast<std::size_t>(sprout::log10(static_cast<double>(parNum)))) + 1 + (std::numeric_limits<T>::is_signed ? 1 : 0);
+			static constexpr std::size_t count_digits_bt (T parNum) {
+				return (parNum == 0 ? 0 : static_cast<std::size_t>(sprout::log10(sprout::abs(static_cast<long double>(parNum))))) + 1 + (std::numeric_limits<T>::is_signed ? 1 : 0);
 			}
 		};
 
@@ -155,8 +157,8 @@ namespace dhandy {
 
 			static std::size_t count_digits ( T parValue ) a_pure;
 			static typename std::make_unsigned<T>::type make_unsigned ( T parValue ) a_pure;
-			static constexpr std::size_t count_digits_bt (std::size_t parNum) {
-				return (parNum == 0 ? 0 : static_cast<std::size_t>(sprout::log2(static_cast<double>(parNum)))) + 1;
+			static constexpr std::size_t count_digits_bt (T parNum) {
+				return (parNum == 0 ? 0 : static_cast<std::size_t>(sprout::log2(sprout::abs(static_cast<long double>(parNum))))) + 1;
 			}
 		};
 
@@ -297,7 +299,7 @@ namespace dhandy {
 
 			template <typename Container>
 			static T sgn (const Container& parString) {
-				return static_cast<T>(std::numeric_limits<T>::is_signed and parString.begin() != parString.end() and *parString.begin() == '-' ? -1 : 1);
+				return static_cast<T>(std::numeric_limits<T>::is_signed and std::begin(parString) != std::end(parString) and *std::begin(parString) == '-' ? -1 : 1);
 			}
 		};
 	} //namespace customize
