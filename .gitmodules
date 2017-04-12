@@ -1,3 +1,6 @@
 [submodule "lib/sprout"]
 	path = lib/sprout
 	url = ../../bolero-MURAKAMI/Sprout.git
+[submodule "lib/Catch"]
+	path = lib/Catch
+	url = https://github.com/philsquared/Catch.git

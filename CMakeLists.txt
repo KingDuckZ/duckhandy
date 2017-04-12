@@ -3,6 +3,9 @@ project(duckhandy)
 list (APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 
 include(shared_git_project)
+include(CTest)
+
+set(DUCKHANDY_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
 add_library(${PROJECT_NAME} INTERFACE)
 
@@ -23,3 +26,6 @@ target_include_directories(${PROJECT_NAME}
 	INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include
 	INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/lib/sprout
 )
+if (BUILD_TESTING)
+	add_subdirectory(test/unit)
+endif()
