@@ -168,7 +168,7 @@ namespace dhandy {
 		std::size_t dec<T>::count_digits_implem (T parValue, dhandy::bt::index_seq<Powers...>, dhandy::bt::index_seq<Digits...>) {
 			typedef typename std::make_unsigned<T>::type UT;
 			static constexpr UT powers[] = { 0, static_cast<UT>(dhandy::implem::power<10, Powers + 1>::value)... };
-			static constexpr std::size_t maxdigits[] = { count_digits_bt(static_cast<std::size_t>(sprout::pow(2.0, Digits))) - (std::numeric_limits<T>::is_signed ? 1 : 0)... };
+			static constexpr std::size_t maxdigits[] = { count_digits_bt(static_cast<T>(sprout::pow(2.0, Digits))) - (std::numeric_limits<T>::is_signed ? 1 : 0)... };
 			const auto bits = sizeof(parValue) * CHAR_BIT - dhandy::implem::count_leading_zeroes<T>(dhandy::implem::abs(parValue));
 			static_assert(std::is_same<UT, decltype(dhandy::implem::abs(parValue))>::value, "Unexpected type");
 			return (dhandy::implem::abs(parValue) < powers[maxdigits[bits] - 1] ? maxdigits[bits] - 1 : maxdigits[bits]) + dhandy::implem::is_negative<T>::check(parValue);
