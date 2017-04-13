@@ -78,4 +78,9 @@ TEST_CASE ("Check string to int conversions", "[s2i][lexical_cast]") {
 }
 
 TEST_CASE ("Check int to string conversions", "[i2s][lexical_cast]") {
+	using std::string;
+	using dhandy::lexical_cast;
+
+	CHECK(lexical_cast<string>(1) == "1");
+	CHECK(lexical_cast<string>(static_cast<uint16_t>(0xFFFF)) == "65535");
 }
