@@ -80,7 +80,14 @@ TEST_CASE ("Check string to int conversions", "[s2i][lexical_cast]") {
 TEST_CASE ("Check int to string conversions", "[i2s][lexical_cast]") {
 	using std::string;
 	using dhandy::lexical_cast;
+	using dhandy::tags::bin;
 
 	CHECK(lexical_cast<string>(1) == "1");
 	CHECK(lexical_cast<string>(static_cast<uint16_t>(0xFFFF)) == "65535");
+
+	CHECK(lexical_cast<string>(static_cast<long long>(0xFFFF)) == "65535");
+	CHECK((lexical_cast<string, bin>(static_cast<uint16_t>(0xFFFF)) == "1111111111111111"));
+	CHECK((lexical_cast<string, bin>(static_cast<int16_t>(0x7FFF)) == "111111111111111"));
+	CHECK((lexical_cast<string, bin>(static_cast<long>(0x0)) == "0"));
+	CHECK((lexical_cast<string, bin>(static_cast<long>(0x1)) == "1"));
 }

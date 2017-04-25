@@ -26,6 +26,11 @@ target_include_directories(${PROJECT_NAME}
 	INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include
 	INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/lib/sprout
 )
+target_compile_definitions(${PROJECT_NAME}
+	INTERFACE SPROUT_NO_CXX11_NUMERIC_LIMITS
+	INTERFACE SPROUT_USE_TEMPLATE_ALIASES
+)
+
 if (BUILD_TESTING)
 	add_subdirectory(test/unit)
 endif()

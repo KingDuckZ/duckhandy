@@ -25,9 +25,9 @@
 #include "sprout/math/log2.hpp"
 #include "sprout/math/pow.hpp"
 #include "sprout/math/abs.hpp"
+#include "sprout/limits.hpp"
 #include <type_traits>
 #include <utility>
-#include <limits>
 #include <cstdint>
 #include <algorithm>
 #include <string>
@@ -49,8 +49,8 @@ namespace dhandy {
 		template <typename T>
 		typename std::make_unsigned<T>::type abs ( T parValue ) a_pure;
 
-		template <typename T> int count_leading_zeroes ( typename std::enable_if<std::numeric_limits<T>::is_signed, T>::type parValue ) a_always_inline;
-		template <typename T> int count_leading_zeroes ( typename std::enable_if<not std::numeric_limits<T>::is_signed, T>::type parValue ) a_always_inline;
+		template <typename T> int count_leading_zeroes ( typename std::enable_if<sprout::numeric_limits<T>::is_signed, T>::type parValue ) a_always_inline;
+		template <typename T> int count_leading_zeroes ( typename std::enable_if<not sprout::numeric_limits<T>::is_signed, T>::type parValue ) a_always_inline;
 		int count_leading_zeroes_overload ( unsigned char parValue ) a_always_inline;
 		int count_leading_zeroes_overload ( unsigned short int parValue ) a_always_inline;
 		int count_leading_zeroes_overload ( unsigned int parValue ) a_always_inline;
@@ -66,7 +66,7 @@ namespace dhandy {
 			enum { value = 1 };
 		};
 
-		template <typename T, bool=std::numeric_limits<T>::is_signed>
+		template <typename T, bool=sprout::numeric_limits<T>::is_signed>
 		struct is_negative;
 		template <typename T>
 		struct is_negative<T, true> {
@@ -78,15 +78,15 @@ namespace dhandy {
 		};
 
 		template <template <typename> class Tag, typename T, typename F>
-		inline auto int_to_string (const F parFrom) -> MaxSizedArray<uint8_t, Tag<F>::count_digits_bt(std::numeric_limits<typename std::make_unsigned<F>::type>::max())> {
-			using ArrayRetType = MaxSizedArray<uint8_t, Tag<F>::count_digits_bt(std::numeric_limits<typename std::make_unsigned<F>::type>::max())>;
+		inline auto int_to_string (const F parFrom) -> MaxSizedArray<uint8_t, Tag<F>::count_digits_bt(sprout::numeric_limits<F>::max())> {
+			using ArrayRetType = MaxSizedArray<uint8_t, Tag<F>::count_digits_bt(sprout::numeric_limits<F>::max())>;
 
 			ArrayRetType retval;
 			F div = 1;
 			constexpr const std::size_t charset_offs = (Tag<F>::lower_case ? Tag<F>::base : 0);
 			const auto sign_length = (is_negative<F>::check(parFrom) and Tag<F>::sign_allowed ? 1 : 0);
 			for (std::size_t z = 0; z < Tag<F>::count_digits(parFrom) - sign_length; ++z) {
-				retval.push_back(static_cast<uint8_t>(((Tag<F>::make_unsigned(parFrom) / div) % Tag<F>::base) + charset_offs));
+				retval.push_back(static_cast<uint8_t>(((parFrom / div) % Tag<F>::base) + charset_offs));
 				div *= Tag<F>::base;
 			}
 			std::reverse(retval.begin(), retval.end());
@@ -115,7 +115,6 @@ namespace dhandy {
 			};
 
 			static std::size_t count_digits ( T parValue ) a_pure;
-			static typename std::make_unsigned<T>::type make_unsigned ( T parValue ) a_pure;
 			static constexpr std::size_t count_digits_bt (T parNum) {
 				return (parNum == 0 ? 0 : static_cast<std::size_t>(sprout::log10(sprout::abs(static_cast<long double>(parNum))) / sprout::log10(static_cast<double>(base)))) + 1;
 			}
@@ -136,9 +135,8 @@ namespace dhandy {
 
 			static std::size_t count_digits (T parValue) a_pure;
 
-			static typename std::make_unsigned<T>::type make_unsigned ( T parValue ) a_pure;
 			static constexpr std::size_t count_digits_bt (T parNum) {
-				return (parNum == 0 ? 0 : static_cast<std::size_t>(sprout::log10(sprout::abs(static_cast<long double>(parNum))))) + 1 + (std::numeric_limits<T>::is_signed ? 1 : 0);
+				return (parNum == 0 ? 0 : static_cast<std::size_t>(sprout::log10(sprout::abs(static_cast<long double>(parNum))))) + 1 + (sprout::numeric_limits<T>::is_signed ? 1 : 0);
 			}
 		};
 
@@ -156,7 +154,6 @@ namespace dhandy {
 			};
 
 			static std::size_t count_digits ( T parValue ) a_pure;
-			static typename std::make_unsigned<T>::type make_unsigned ( T parValue ) a_pure;
 			static constexpr std::size_t count_digits_bt (T parNum) {
 				return (parNum == 0 ? 0 : static_cast<std::size_t>(sprout::log2(sprout::abs(static_cast<long double>(parNum))))) + 1;
 			}
@@ -171,7 +168,7 @@ namespace dhandy {
 			static constexpr UT powers[] = { 0, static_cast<UT>(dhandy::implem::power<10, Powers + 1>::value)... };
 			//the maxdigits table is [len(str(pow(2,b))) for b in range(0,MAX_BITS)]
 			static constexpr std::size_t maxdigits[] = { static_cast<std::size_t>(static_cast<double>(Digits) / sprout::log2(10.0)) + 1 ... };
-			static_assert(maxdigits[sizeof(maxdigits) / sizeof(maxdigits[0]) - 1] <= std::numeric_limits<T>::max(), "Last item in maxdigits overflows T");
+			static_assert(maxdigits[sizeof(maxdigits) / sizeof(maxdigits[0]) - 1] <= sprout::numeric_limits<T>::max(), "Last item in maxdigits overflows T");
 			const auto bits = sizeof(parValue) * CHAR_BIT - dhandy::implem::count_leading_zeroes<T>(dhandy::implem::abs(parValue));
 			static_assert(std::is_same<UT, decltype(dhandy::implem::abs(parValue))>::value, "Unexpected type");
 			assert(bits < sizeof(maxdigits) / sizeof(maxdigits[0]));
@@ -182,24 +179,14 @@ namespace dhandy {
 		std::size_t dec<T>::count_digits (T parValue) {
 			return count_digits_implem(
 				parValue,
-				dhandy::bt::index_range<0, count_digits_bt(std::numeric_limits<T>::max()) - (std::numeric_limits<T>::is_signed ? 1 : 0) - 1>(),
+				dhandy::bt::index_range<0, count_digits_bt(sprout::numeric_limits<T>::max()) - (sprout::numeric_limits<T>::is_signed ? 1 : 0) - 1>(),
 				dhandy::bt::index_range<0, CHAR_BIT * sizeof(T) + 1>()
 			);
 		}
 
 		template <typename T>
-		typename std::make_unsigned<T>::type dec<T>::make_unsigned (T parValue) {
-			return dhandy::implem::abs(parValue);
-		}
-
-		template <typename T>
 		std::size_t bin<T>::count_digits (T parValue) {
-			return std::max<std::size_t>((sizeof(parValue) * CHAR_BIT - dhandy::implem::count_leading_zeroes<typename std::make_unsigned<T>::type>(make_unsigned(parValue))), 1);
-		}
-
-		template <typename T>
-		typename std::make_unsigned<T>::type bin<T>::make_unsigned (T parValue) {
-			return static_cast<typename std::make_unsigned<T>::type>(parValue);
+			return std::max<std::size_t>((sizeof(parValue) * CHAR_BIT - dhandy::implem::count_leading_zeroes<T>(parValue)), 1);
 		}
 	} //namespace tags
 
@@ -219,12 +206,12 @@ namespace dhandy {
 		};
 
 		template <typename T>
-		inline int count_leading_zeroes (typename std::enable_if<std::numeric_limits<T>::is_signed, T>::type parValue) {
+		inline int count_leading_zeroes (typename std::enable_if<sprout::numeric_limits<T>::is_signed, T>::type parValue) {
 			return count_leading_zeroes<decltype(dhandy::implem::abs(parValue))>(dhandy::implem::abs(parValue));
 		}
 
 		template <typename T>
-		inline int count_leading_zeroes (typename std::enable_if<not std::numeric_limits<T>::is_signed, T>::type parValue) {
+		inline int count_leading_zeroes (typename std::enable_if<not sprout::numeric_limits<T>::is_signed, T>::type parValue) {
 			return count_leading_zeroes_overload(parValue) + sizeof(T) * CHAR_BIT;
 		}
 
@@ -254,11 +241,6 @@ namespace dhandy {
 		template <typename T, bool LowerCase>
 		std::size_t hex<T, LowerCase>::count_digits (T parValue) {
 			return std::max<std::size_t>(((sizeof(parValue) * CHAR_BIT - dhandy::implem::count_leading_zeroes<typename std::make_unsigned<T>::type>(make_unsigned(parValue))) + (CHAR_BIT / 2 - 1)) / (CHAR_BIT / 2), 1);
-		}
-
-		template <typename T, bool LowerCase>
-		typename std::make_unsigned<T>::type hex<T, LowerCase>::make_unsigned (T parValue) {
-			return static_cast<typename std::make_unsigned<T>::type>(parValue);
 		}
 	} //namespace implem
 
@@ -303,7 +285,7 @@ namespace dhandy {
 
 			template <typename Container>
 			static T sgn (const Container& parString) {
-				return static_cast<T>(std::numeric_limits<T>::is_signed and std::begin(parString) != std::end(parString) and *std::begin(parString) == '-' ? -1 : 1);
+				return static_cast<T>(sprout::numeric_limits<T>::is_signed and std::begin(parString) != std::end(parString) and *std::begin(parString) == '-' ? -1 : 1);
 			}
 		};
 	} //namespace customize
