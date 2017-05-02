@@ -1,4 +1,4 @@
-/* Copyright 2016, Michele Santullo
+/* Copyright 2016, 2017 Michele Santullo
  * This file is part of "duckhandy".
  *
  * "duckhandy" is free software: you can redistribute it and/or modify
@@ -77,7 +77,7 @@ namespace dhandy {
 			static constexpr int check (T) { return 0; }
 		};
 
-		template <template <typename> class Tag, typename T, typename F>
+		template <template <typename> class Tag, typename F>
 		inline auto int_to_string (const F parFrom) -> MaxSizedArray<uint8_t, Tag<F>::count_digits_bt(sprout::numeric_limits<F>::max())> {
 			using ArrayRetType = MaxSizedArray<uint8_t, Tag<F>::count_digits_bt(sprout::numeric_limits<F>::max())>;
 
@@ -195,7 +195,7 @@ namespace dhandy {
 		struct lexical_cast {
 			template <typename T, typename F>
 			static T convert ( const typename std::enable_if<std::is_integral<F>::value, F>::type& parFrom ) {
-				const auto indices = int_to_string<Tag, T, F>(parFrom);
+				const auto indices = int_to_string<Tag, F>(parFrom);
 				return dhandy::customize::index_array_to_string<T>::make(indices, is_negative<F>::check(parFrom) bitand Tag<F>::sign_allowed);
 			}
 
