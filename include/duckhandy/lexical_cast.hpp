@@ -39,10 +39,13 @@
 namespace dhandy {
 	namespace customize {
 		template<typename T>
-		struct index_array_to_string;
+		struct index_to_char;
 
 		template<typename C, typename T>
 		struct char_to_int;
+
+		template<typename C, std::size_t S, typename T>
+		struct array_to_t;
 	} //namespace customize
 
 	namespace implem {
@@ -77,18 +80,22 @@ namespace dhandy {
 			static constexpr int check (T) { return 0; }
 		};
 
-		template <template <typename> class Tag, typename F>
-		inline auto int_to_string (const F parFrom) -> MaxSizedArray<uint8_t, Tag<F>::count_digits_bt(sprout::numeric_limits<F>::max())> {
-			using ArrayRetType = MaxSizedArray<uint8_t, Tag<F>::count_digits_bt(sprout::numeric_limits<F>::max())>;
+
+		template <template <typename> class Tag, typename F, typename C>
+		inline auto int_to_string (const F parFrom) -> MaxSizedArray<C, Tag<F>::count_digits_bt(sprout::numeric_limits<F>::max())> {
+			using ArrayRetType = MaxSizedArray<C, Tag<F>::count_digits_bt(sprout::numeric_limits<F>::max())>;
 
 			ArrayRetType retval;
 			F div = 1;
-			constexpr const std::size_t charset_offs = (Tag<F>::lower_case ? Tag<F>::base : 0);
+			constexpr const std::size_t charset_offs = (Tag<F>::lower_case ? Tag<F>::base + 1 : 1);
 			const auto sign_length = (is_negative<F>::check(parFrom) and Tag<F>::sign_allowed ? 1 : 0);
 			for (std::size_t z = 0; z < Tag<F>::count_digits(parFrom) - sign_length; ++z) {
-				retval.push_back(static_cast<uint8_t>(((parFrom / div) % Tag<F>::base) + charset_offs));
+				const uint8_t idx = static_cast<uint8_t>(((parFrom / div) % Tag<F>::base) + charset_offs);
+				retval.push_back(dhandy::customize::index_to_char<C>::make(idx));
 				div *= Tag<F>::base;
 			}
+			if (sign_length)
+				retval.push_back(dhandy::customize::index_to_char<C>::make(0));
 			std::reverse(retval.begin(), retval.end());
 			return retval;
 		};
@@ -195,8 +202,8 @@ namespace dhandy {
 		struct lexical_cast {
 			template <typename T, typename F>
 			static T convert ( const typename std::enable_if<std::is_integral<F>::value, F>::type& parFrom ) {
-				const auto indices = int_to_string<Tag, F>(parFrom);
-				return dhandy::customize::index_array_to_string<T>::make(indices, is_negative<F>::check(parFrom) bitand Tag<F>::sign_allowed);
+				auto indices = int_to_string<Tag, F, char>(parFrom);
+				return dhandy::customize::array_to_t<typename decltype(indices)::value_type, decltype(indices)::MAX_SIZE, T>::make(std::move(indices));
 			}
 
 			template <typename T, typename F>
@@ -251,21 +258,18 @@ namespace dhandy {
 
 	namespace customize {
 		template<>
-		struct index_array_to_string<std::string> {
-			template<std::size_t N>
-			static std::string make (const MaxSizedArray<uint8_t, N> &parIndices, int parNegative) {
-				static const char symbols[] = {'0', '1', '2', '3', '4', '5',
-											   '6', '7', '8', '9', 'A', 'B',
-											   'C', 'D', 'E', 'F',
-											   '0', '1', '2', '3', '4', '5',
-											   '6', '7', '8', '9', 'a', 'b',
-											   'c', 'd', 'e', 'f'
+		struct index_to_char<char> {
+			static char make (uint8_t parIndex) {
+				static const char symbols[] = {
+					'-',
+					'0', '1', '2', '3', '4', '5',
+					'6', '7', '8', '9', 'A', 'B',
+					'C', 'D', 'E', 'F',
+					'0', '1', '2', '3', '4', '5',
+					'6', '7', '8', '9', 'a', 'b',
+					'c', 'd', 'e', 'f'
 				};
-				std::string retval(parIndices.size() + parNegative, '-');
-				for (auto z = parNegative; z < static_cast<int>(parIndices.size()) + parNegative; ++z) {
-					retval[z] = symbols[parIndices[z - parNegative]];
-				}
-				return retval;
+				return symbols[parIndex];
 			}
 		};
 
@@ -286,6 +290,13 @@ namespace dhandy {
 			template <typename Container>
 			static T sgn (const Container& parString) {
 				return static_cast<T>(sprout::numeric_limits<T>::is_signed and std::begin(parString) != std::end(parString) and *std::begin(parString) == '-' ? -1 : 1);
+			}
+		};
+
+		template<typename C, std::size_t S>
+		struct array_to_t<C, S, std::string> {
+			static std::string make (MaxSizedArray<C, S>&& parIn) {
+				return std::string(parIn.begin(), parIn.end());
 			}
 		};
 	} //namespace customize
