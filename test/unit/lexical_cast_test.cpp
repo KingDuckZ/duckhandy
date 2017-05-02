@@ -17,6 +17,7 @@
 
 #include "catch.hpp"
 #include "duckhandy/lexical_cast.hpp"
+#include "duckhandy/int_to_string_ary.hpp"
 #include <cstdint>
 #include <string>
 #include <cstddef>

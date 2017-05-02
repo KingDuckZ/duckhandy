@@ -256,11 +256,6 @@ namespace dhandy {
 		return dhandy::implem::lexical_cast<Tag>::template convert<T, F>(parFrom);
 	}
 
-	template <typename C, template <typename> class Tag=tags::dec, typename F=void>
-	inline auto int_to_string_ary (const F& parFrom) -> MaxSizedArray<C, Tag<F>::count_digits_bt(sprout::numeric_limits<F>::max())> {
-		return dhandy::lexical_cast<MaxSizedArray<C, Tag<F>::count_digits_bt(sprout::numeric_limits<F>::max())>, Tag, F>(parFrom);
-	}
-
 	namespace customize {
 		template<>
 		struct index_to_char<char> {
@@ -302,12 +297,6 @@ namespace dhandy {
 		struct array_to_t<C, S, std::string> {
 			static std::string make (MaxSizedArray<C, S>&& parIn) {
 				return std::string(parIn.begin(), parIn.end());
-			}
-		};
-		template<typename C, std::size_t S>
-		struct array_to_t<C, S, MaxSizedArray<C, S>> {
-			static MaxSizedArray<C, S> make (MaxSizedArray<C, S>&& parIn) {
-				return parIn;
 			}
 		};
 	} //namespace customize
