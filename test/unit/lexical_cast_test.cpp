@@ -81,6 +81,7 @@ TEST_CASE ("Check int to string conversions", "[i2s][lexical_cast]") {
 	using std::string;
 	using dhandy::lexical_cast;
 	using dhandy::tags::bin;
+	using dhandy::int_to_string_ary;
 
 	CHECK(lexical_cast<string>(1) == "1");
 	CHECK(lexical_cast<string>(static_cast<uint16_t>(0xFFFF)) == "65535");
@@ -90,4 +91,17 @@ TEST_CASE ("Check int to string conversions", "[i2s][lexical_cast]") {
 	CHECK((lexical_cast<string, bin>(static_cast<int16_t>(0x7FFF)) == "111111111111111"));
 	CHECK((lexical_cast<string, bin>(static_cast<long>(0x0)) == "0"));
 	CHECK((lexical_cast<string, bin>(static_cast<long>(0x1)) == "1"));
+
+	{
+		auto fixed = int_to_string_ary<char>(1234);
+		std::string str = lexical_cast<std::string>(1234);
+		REQUIRE(fixed.size() == str.size());
+		CHECK(std::equal(fixed.begin(), fixed.end(), str.begin()));
+	}
+	{
+		auto fixed = int_to_string_ary<char>(-1234);
+		std::string str = lexical_cast<std::string>(-1234);
+		REQUIRE(fixed.size() == str.size());
+		CHECK(std::equal(fixed.begin(), fixed.end(), str.begin()));
+	}
 }
