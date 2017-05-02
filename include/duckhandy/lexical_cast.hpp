@@ -21,6 +21,7 @@
 #include "compatibility.h"
 #include "sequence_bt.hpp"
 #include "MaxSizedArray.hpp"
+#include "has_method.hpp"
 #include "sprout/math/log10.hpp"
 #include "sprout/math/log2.hpp"
 #include "sprout/math/pow.hpp"
@@ -126,6 +127,17 @@ namespace dhandy {
 				return (parNum == 0 ? 0 : static_cast<std::size_t>(sprout::log10(sprout::abs(static_cast<long double>(parNum))) / sprout::log10(static_cast<double>(base)))) + 1;
 			}
 		};
+
+		define_has_typedef(char_type, CharType);
+		define_has_typedef(value_type, ValueType);
+
+		template <typename T, typename=void> struct get_char_type;
+		template <typename T> struct get_char_type<T, typename std::enable_if<HasCharTypeTypedef<T>::value>::type> {
+			typedef typename T::char_type value_type;
+		};
+		template <typename T> struct get_char_type<T, typename std::enable_if<HasValueTypeTypedef<T>::value && !HasCharTypeTypedef<T>::value>::type> {
+			typedef typename T::value_type value_type;
+		};
 	} //namespace implem
 
 	namespace tags {
@@ -202,7 +214,7 @@ namespace dhandy {
 		struct lexical_cast {
 			template <typename T, typename F>
 			static T convert ( const typename std::enable_if<std::is_integral<F>::value, F>::type& parFrom ) {
-				auto indices = int_to_string<Tag, F, char>(parFrom);
+				auto indices = int_to_string<Tag, F, typename implem::get_char_type<T>::value_type>(parFrom);
 				return dhandy::customize::array_to_t<typename decltype(indices)::value_type, decltype(indices)::MAX_SIZE, T>::make(std::move(indices));
 			}
 
