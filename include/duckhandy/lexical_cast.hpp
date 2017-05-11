@@ -259,7 +259,7 @@ namespace dhandy {
 
 		template <typename T, bool LowerCase>
 		std::size_t hex<T, LowerCase>::count_digits (T parValue) {
-			return std::max<std::size_t>(((sizeof(parValue) * CHAR_BIT - dhandy::implem::count_leading_zeroes<typename std::make_unsigned<T>::type>(make_unsigned(parValue))) + (CHAR_BIT / 2 - 1)) / (CHAR_BIT / 2), 1);
+			return std::max<std::size_t>(((sizeof(parValue) * CHAR_BIT - dhandy::implem::count_leading_zeroes<T>(parValue)) + (CHAR_BIT / 2 - 1)) / (CHAR_BIT / 2), 1);
 		}
 	} //namespace implem
 
