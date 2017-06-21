@@ -3,6 +3,7 @@ project(dhandy_unit_test CXX)
 add_executable(${PROJECT_NAME}
 	main.cpp
 	lexical_cast_test.cpp
+	endianness_test.cpp
 )
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
