@@ -95,6 +95,28 @@ namespace dhandy {
 #	error "Unsupported endianness"
 #endif
 	}
+	template <>
+	[[gnu::pure]] inline constexpr long long int htobe (long long int parV) {
+		static_assert(sizeof(long long int) == sizeof(uint64_t), "Size mismatch");
+#if __BYTE_ORDER == __BIG_ENDIAN
+		return parV;
+#elif __BYTE_ORDER == __LITTLE_ENDIAN
+		return static_cast<long long int>(__builtin_bswap64(static_cast<uint64_t>(parV)));
+#else
+#	error "Unsupported endianness"
+#endif
+	}
+	template <>
+	[[gnu::pure]] inline constexpr unsigned long long int htobe (unsigned long long int parV) {
+		static_assert(sizeof(unsigned long long int) == sizeof(uint64_t), "Size mismatch");
+#if __BYTE_ORDER == __BIG_ENDIAN
+		return parV;
+#elif __BYTE_ORDER == __LITTLE_ENDIAN
+		return static_cast<unsigned long long int>(__builtin_bswap64(static_cast<uint64_t>(parV)));
+#else
+#	error "Unsupported endianness"
+#endif
+	}
 
 	template <>
 	[[gnu::pure]] inline constexpr uint8_t htole (uint8_t parV) {
@@ -158,6 +180,28 @@ namespace dhandy {
 	[[gnu::pure]] inline constexpr int64_t htole (int64_t parV) {
 #if __BYTE_ORDER == __BIG_ENDIAN
 		return static_cast<int64_t>(__builtin_bswap64(static_cast<uint64_t>(parV)));
+#elif __BYTE_ORDER == __LITTLE_ENDIAN
+		return parV;
+#else
+#	error "Unsupported endianness"
+#endif
+	}
+	template <>
+	[[gnu::pure]] inline constexpr long long int htole (long long int parV) {
+		static_assert(sizeof(long long int) == sizeof(uint64_t), "Size mismatch");
+#if __BYTE_ORDER == __BIG_ENDIAN
+		return static_cast<long long int>(__builtin_bswap64(static_cast<uint64_t>(parV)));
+#elif __BYTE_ORDER == __LITTLE_ENDIAN
+		return parV;
+#else
+#	error "Unsupported endianness"
+#endif
+	}
+	template <>
+	[[gnu::pure]] inline constexpr unsigned long long int htole (unsigned long long int parV) {
+		static_assert(sizeof(unsigned long long int) == sizeof(uint64_t), "Size mismatch");
+#if __BYTE_ORDER == __BIG_ENDIAN
+		return static_cast<unsigned long long int>(__builtin_bswap64(static_cast<uint64_t>(parV)));
 #elif __BYTE_ORDER == __LITTLE_ENDIAN
 		return parV;
 #else
