@@ -25,34 +25,35 @@
 
 namespace dhandy {
 	namespace bt {
-		template <std::size_t S>
+		template <std::size_t S, typename Ch=char>
 		class string;
 
-		template <std::size_t S>
-		std::ostream& operator<< ( std::ostream& parStream, const string<S>& parString );
+		template <std::size_t S, typename Ch>
+		std::basic_ostream<Ch>& operator<< ( std::basic_ostream<Ch>& parStream, const string<S, Ch>& parString );
 
-		template <std::size_t S>
+		template <std::size_t S, typename Ch>
 		class string {
-		public:
 			friend std::ostream& operator<< <>( std::ostream& parStream, const string<S>& parString );
-			constexpr string ( const char* parString );
+		public:
+			using value_type = Ch;
+			constexpr string ( const value_type* parString );
 
 			constexpr std::size_t size ( void ) const { return S - 1; }
 			template <std::size_t S2>
-			constexpr string<S + S2 - 1> operator+ ( const string<S2>& parOther ) const;
-			constexpr char operator[] ( std::size_t parIndex ) const;
+			constexpr string<S + S2 - 1, Ch> operator+ ( const string<S2, Ch>& parOther ) const;
+			constexpr value_type operator[] ( std::size_t parIndex ) const;
 
 			template <typename... Args>
 			constexpr string ( Args... );
 
-			constexpr const char (&data_arr() const)[S] { return m_data; }
-			constexpr const char* data() const { return m_data; }
+			constexpr const value_type (&data_arr() const)[S] { return m_data; }
+			constexpr const value_type* data() const { return m_data; }
 
 		private:
 			template <std::size_t... I>
-			constexpr string ( const index_seq<I...>&, const char* parString );
+			constexpr string ( const index_seq<I...>&, const value_type* parString );
 
-			const char m_data[S];
+			const value_type m_data[S];
 		};
 
 		namespace implem {
@@ -65,45 +66,45 @@ namespace dhandy {
 
 		} //namespace implem
 
-		template <std::size_t S>
+		template <std::size_t S, typename Ch>
 		template <std::size_t... I>
-		constexpr string<S>::string (const index_seq<I...>&, const char* parString) :
+		constexpr string<S, Ch>::string (const index_seq<I...>&, const value_type* parString) :
 			m_data{parString[I]...}
 		{
 		}
 
-		template <std::size_t S>
-		inline constexpr string<S>::string (const char* parString) :
+		template <std::size_t S, typename Ch>
+		inline constexpr string<S, Ch>::string (const value_type* parString) :
 			string(index_range<0, S>(), parString)
 		{
 		}
 
-		template <std::size_t S>
+		template <std::size_t S, typename Ch>
 		template <typename... Args>
-		inline constexpr string<S>::string (Args... parArgs) :
+		inline constexpr string<S, Ch>::string (Args... parArgs) :
 			m_data{parArgs...}
 		{
 		}
 
-		template <std::size_t S>
+		template <std::size_t S, typename Ch>
 		template <std::size_t S2>
-		constexpr inline string<S + S2 - 1> string<S>::operator+ (const string<S2>& parOther) const {
+		constexpr inline string<S + S2 - 1, Ch> string<S, Ch>::operator+ (const string<S2, Ch>& parOther) const {
 			return implem::concat(index_range<0, S + S2 - 1>(), string<S>(m_data), parOther);
 		}
 
-		template <std::size_t S>
-		inline std::ostream& operator<< (std::ostream& parStream, const string<S>& parString) {
+		template <std::size_t S, typename Ch>
+		inline std::ostream& operator<< (std::ostream& parStream, const string<S, Ch>& parString) {
 			parStream << parString.m_data;
 			return parStream;
 		}
 
-		template <std::size_t S>
-		constexpr char string<S>::operator[] (std::size_t parIndex) const {
+		template <std::size_t S, typename Ch>
+		constexpr auto string<S, Ch>::operator[] (std::size_t parIndex) const -> value_type {
 			return (parIndex < S ? m_data[parIndex] : throw std::out_of_range(""));
 		}
 
-		template <std::size_t S>
-		constexpr string<S> make_string (const char (&parData)[S]) {
+		template <std::size_t S, typename Ch>
+		constexpr string<S, Ch> make_string (const Ch (&parData)[S]) {
 			return string<S>(parData);
 		}
 	} //namespace bt
