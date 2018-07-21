@@ -68,7 +68,9 @@ namespace dhandy {
 			using CastedType = typename std::conditional<BecomesUnsigned, UnsignedType, I>::type;
 
 			template <typename L>
+			[[gnu::pure,gnu::always_inline]]
 			static constexpr L abs(L in) { return (not BecomesUnsigned and std::numeric_limits<L>::is_signed and in < L(0) ? -in : in); }
+			[[gnu::pure,gnu::always_inline]]
 			static constexpr CastedType cast (I in) { return static_cast<CastedType>(in); }
 		};
 
@@ -86,6 +88,38 @@ namespace dhandy {
 					arr.push_front(Tr::to_digit(static_cast<int>(Num::abs(Num::cast(in)) % Base)));
 					in = static_cast<I>(Num::cast(in) / static_cast<I>(Base));
 				} while (in);
+				if (was_negative)
+					arr.push_front(Tr::minus());
+				return arr;
+			}
+		};
+
+		template <typename I, typename Tr>
+		struct IntConversion<I, 10, Tr> {
+			static constexpr ReversedSizedArray<std::decay_t<decltype(std::declval<Tr>().to_digit(1))>, implem::int_info<I, 10>::max_len + 1> to_ary (I in) {
+				using RetType = ReversedSizedArray<std::decay_t<decltype(std::declval<Tr>().to_digit(1))>, implem::int_info<I, 10>::max_len + 1>;
+				using Num = implem::NumberAdaptation<I, 10>;
+
+				const constexpr char lookup[201] = "000102030405060708091011121314"
+					"1516171819202122232425262728293031323334353637383940414243"
+					"4445464748495051525354555657585960616263646566676869707172"
+					"737475767778798081828384858687888990919293949596979899";
+				const bool was_negative = implem::is_negative<I, 10>(in);
+
+				RetType arr;
+				arr.push_front('\0');
+				while (Num::abs(in) >= static_cast<I>(100)) {
+					arr.push_front(Tr::to_digit(static_cast<int>(lookup[(Num::abs(in) % 100) * 2 + 1] - '0')));
+					arr.push_front(Tr::to_digit(static_cast<int>(lookup[(Num::abs(in) % 100) * 2 + 0] - '0')));
+					in = static_cast<I>(in / static_cast<I>(100));
+				};
+				if (Num::abs(in) < static_cast<I>(10)) {
+					arr.push_front(Tr::to_digit(static_cast<int>(Num::abs(in))));
+				}
+				else {
+					arr.push_front(Tr::to_digit(static_cast<int>(lookup[Num::abs(in) * 2 + 1] - '0')));
+					arr.push_front(Tr::to_digit(static_cast<int>(lookup[Num::abs(in) * 2 + 0] - '0')));
+				}
 				if (was_negative)
 					arr.push_front(Tr::minus());
 				return arr;
