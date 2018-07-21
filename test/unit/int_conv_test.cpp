@@ -89,4 +89,12 @@ TEST_CASE ("Check int to char array conversions", "[s2i][int_conv]") {
 	CHECK(to_string_view(int_to_ary<int8_t, 2>(0b11111111)) == "11111111");
 	CHECK(to_string_view(int_to_ary<uint16_t, 2>(0b111100001111)) == "111100001111");
 	CHECK(to_string_view(int_to_ary<int16_t, 2>(0b111100001111)) == "111100001111");
+	CHECK(to_string_view(int_to_ary<int64_t, 36>(9223372036854775807)) == "1y2p0ij32e8e7");
+	CHECK(to_string_view(int_to_ary<int64_t, 36>(0x8000000000000001)) == "1y2p0ij32e8e9");
+#if defined(__GNUC__)
+	__int128_t num = 10000000000000000000U;
+	CHECK(to_string_view(int_to_ary<__int128_t, 10>(num * 100)) == "1000000000000000000000");
+	num = 0xFFFFFFFFFFFFFFFF;
+	CHECK(to_string_view(int_to_ary<__int128_t, 16>(num * 0x10000 + 0xffff)) == "ffffffffffffffffffff");
+#endif
 }
