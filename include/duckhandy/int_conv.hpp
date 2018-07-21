@@ -71,6 +71,26 @@ namespace dhandy {
 			static constexpr L abs(L in) { return (not BecomesUnsigned and std::numeric_limits<L>::is_signed and in < L(0) ? -in : in); }
 			static constexpr CastedType cast (I in) { return static_cast<CastedType>(in); }
 		};
+
+		template <typename I, unsigned int Base, typename Tr>
+		struct IntConversion {
+			static constexpr ReversedSizedArray<std::decay_t<decltype(std::declval<Tr>().to_digit(1))>, implem::int_info<I, Base>::max_len + 1> to_ary (I in) {
+				using RetType = ReversedSizedArray<std::decay_t<decltype(std::declval<Tr>().to_digit(1))>, implem::int_info<I, Base>::max_len + 1>;
+				using Num = implem::NumberAdaptation<I, Base>;
+
+				const bool was_negative = implem::is_negative<I, Base>(in);
+
+				RetType arr;
+				arr.push_front('\0');
+				do {
+					arr.push_front(Tr::to_digit(static_cast<int>(Num::abs(Num::cast(in)) % Base)));
+					in = static_cast<I>(Num::cast(in) / static_cast<I>(Base));
+				} while (in);
+				if (was_negative)
+					arr.push_front(Tr::minus());
+				return arr;
+			}
+		};
 	} //namespace implem
 
 	template <typename C, C FirstLetter='a'>
@@ -85,21 +105,8 @@ namespace dhandy {
 	};
 
 	template <typename I, unsigned int Base=10, typename Tr=DefaultTranslator<char>>
-	constexpr inline ReversedSizedArray<std::decay_t<decltype(std::declval<Tr>().to_digit(1))>, implem::int_info<I, Base>::max_len + 1> int_to_ary (I in) {
-		using RetType = ReversedSizedArray<std::decay_t<decltype(std::declval<Tr>().to_digit(1))>, implem::int_info<I, Base>::max_len + 1>;
-		using Num = implem::NumberAdaptation<std::decay_t<I>, Base>;
-
-		const bool was_negative = implem::is_negative<I, Base>(in);
-
-		RetType arr;
-		arr.push_front('\0');
-		do {
-			arr.push_front(Tr::to_digit(static_cast<int>(Num::abs(Num::cast(in)) % Base)));
-			in = static_cast<I>(Num::cast(in) / static_cast<I>(Base));
-		} while (in);
-		if (was_negative)
-			arr.push_front(Tr::minus());
-		return arr;
+	constexpr inline auto int_to_ary (I in) {
+		return implem::IntConversion<std::decay_t<I>, Base, Tr>::to_ary(in);
 	}
 
 #if !defined(INT_CONV_WITHOUT_HELPERS)
