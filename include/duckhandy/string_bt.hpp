@@ -31,9 +31,14 @@ namespace dhandy {
 		template <std::size_t S, typename Ch>
 		std::basic_ostream<Ch>& operator<< ( std::basic_ostream<Ch>& parStream, const string<S, Ch>& parString );
 
+		namespace implem {
+			template <std::size_t S, typename Ch> constexpr bool eq (const string<S, Ch>& l, const string<S, Ch>& r);
+		} //namespace implem
+
 		template <std::size_t S, typename Ch>
 		class string {
 			friend std::ostream& operator<< <>( std::ostream& parStream, const string<S>& parString );
+			friend constexpr bool implem::eq<S, Ch> (const string<S, Ch>&, const string<S, Ch>&);
 		public:
 			using value_type = Ch;
 			constexpr string ( const value_type* parString );
@@ -42,6 +47,8 @@ namespace dhandy {
 			template <std::size_t S2>
 			constexpr string<S + S2 - 1, Ch> operator+ ( const string<S2, Ch>& parOther ) const;
 			constexpr value_type operator[] ( std::size_t parIndex ) const;
+			constexpr bool operator== (const string<S, Ch>& other) const;
+			template <std::size_t S2> constexpr bool operator== (const string<S2, Ch>&) const { return false; }
 
 			template <typename... Args>
 			constexpr string ( Args... );
@@ -64,6 +71,9 @@ namespace dhandy {
 				);
 			}
 
+			template <> constexpr inline bool eq (const string<1>& l, const string<1>& r) { return l[0] == r[0]; }
+			template <std::size_t S, typename Ch>
+			constexpr inline bool eq (const string<S, Ch>& l, const string<S, Ch>& r) { return l[0] == r[0] and eq(string<S-1>(l.m_data+1), string<S-1>(r.m_data+1)); }
 		} //namespace implem
 
 		template <std::size_t S, typename Ch>
@@ -106,6 +116,11 @@ namespace dhandy {
 		template <std::size_t S, typename Ch>
 		constexpr string<S, Ch> make_string (const Ch (&parData)[S]) {
 			return string<S>(parData);
+		}
+
+		template <std::size_t S, typename Ch>
+		constexpr bool string<S, Ch>::operator== (const string<S, Ch>& other) const {
+			return implem::eq(*this, other);
 		}
 	} //namespace bt
 } //namespace dhandy
