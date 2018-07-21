@@ -42,7 +42,7 @@ namespace dhandy {
 		template <typename I, unsigned int Base>
 		struct int_info {
 			static_assert(Base > 1, "Invalid base");
-			static const constexpr bool always_unsigned = (Base == 16 or Base == 2);
+			static const constexpr bool always_unsigned = (Base == 16 or Base == 2 or Base == 36);
 			static const constexpr bool is_signed = std::numeric_limits<I>::is_signed and not always_unsigned;
 			static const constexpr std::size_t max_len = max_digit_count<typename std::conditional<always_unsigned, std::make_unsigned_t<I>, I>::type, Base> + is_signed;
 		};
