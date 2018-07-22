@@ -81,8 +81,10 @@ TEST_CASE ("Check int to char array conversions", "[s2i][int_conv]") {
 	CHECK(to_string_view(int_to_ary<uint32_t, 16>(0)) == "0");
 	CHECK(to_string_view(int_to_ary<int32_t, 10>(0)) == "0");
 	CHECK(to_string_view(int_to_ary<uint32_t, 10>(0)) == "0");
-	//CHECK(to_string_view(int_to_ary<bool, 8>(false)) == "0");
-	//CHECK(to_string_view(int_to_ary<bool, 8>(true)) == "0");
+	CHECK(to_string_view(int_to_ary<bool, 8>(false)) == "0");
+	CHECK(to_string_view(int_to_ary<bool, 8>(true)) == "1");
+	CHECK(to_string_view(int_to_ary<bool, 10>(false)) == "0");
+	CHECK(to_string_view(int_to_ary<bool, 10>(true)) == "1");
 	CHECK(to_string_view(int_to_ary<uint8_t, 2>(0b10101010)) == "10101010");
 	CHECK(to_string_view(int_to_ary<int8_t, 2>(0b10101010)) == "10101010");
 	CHECK(to_string_view(int_to_ary<uint8_t, 2>(0b11111111)) == "11111111");
@@ -92,6 +94,7 @@ TEST_CASE ("Check int to char array conversions", "[s2i][int_conv]") {
 	CHECK(to_string_view(int_to_ary<int64_t, 36>(9223372036854775807)) == "1y2p0ij32e8e7");
 	CHECK(to_string_view(int_to_ary<int64_t, 36>(0x8000000000000001)) == "1y2p0ij32e8e9");
 #if defined(__GNUC__)
+	static_assert(std::is_integral<__int128_t>::value, "Warning, int128 won't pickup the optimized base 10 conversion path");
 	__int128_t num = 10000000000000000000U;
 	CHECK(to_string_view(int_to_ary<__int128_t, 10>(num * 100)) == "1000000000000000000000");
 	num = 0xFFFFFFFFFFFFFFFF;

@@ -74,7 +74,7 @@ namespace dhandy {
 			static constexpr CastedType cast (I in) { return static_cast<CastedType>(in); }
 		};
 
-		template <typename I, unsigned int Base, typename Tr>
+		template <typename I, unsigned int Base, typename Tr, typename=void>
 		struct IntConversion {
 			static constexpr ReversedSizedArray<std::decay_t<decltype(std::declval<Tr>().to_digit(1))>, implem::int_info<I, Base>::max_len + 1> to_ary (I in) {
 				using RetType = ReversedSizedArray<std::decay_t<decltype(std::declval<Tr>().to_digit(1))>, implem::int_info<I, Base>::max_len + 1>;
@@ -94,8 +94,20 @@ namespace dhandy {
 			}
 		};
 
+		template <unsigned int Base, typename Tr>
+		struct IntConversion<bool, Base, Tr, void> {
+			static constexpr ReversedSizedArray<std::decay_t<decltype(std::declval<Tr>().to_digit(1))>, 2> to_ary (bool in) {
+				using RetType = ReversedSizedArray<std::decay_t<decltype(std::declval<Tr>().to_digit(1))>, 2>;
+
+				RetType arr;
+				arr.push_front('\0');
+				arr.push_front(in ? Tr::to_digit(1) : Tr::to_digit(0));
+				return arr;
+			}
+		};
+
 		template <typename I, typename Tr>
-		struct IntConversion<I, 10, Tr> {
+		struct IntConversion<I, 10, Tr, typename std::enable_if<std::is_integral<I>::value and not std::is_same<I, bool>::value>::type> {
 			static constexpr ReversedSizedArray<std::decay_t<decltype(std::declval<Tr>().to_digit(1))>, implem::int_info<I, 10>::max_len + 1> to_ary (I in) {
 				using RetType = ReversedSizedArray<std::decay_t<decltype(std::declval<Tr>().to_digit(1))>, implem::int_info<I, 10>::max_len + 1>;
 				using Num = implem::NumberAdaptation<I, 10>;
