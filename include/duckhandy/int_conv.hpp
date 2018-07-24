@@ -140,7 +140,7 @@ namespace dhandy {
 	} //namespace implem
 
 	template <typename C, C FirstLetter='a'>
-	struct DefaultTranslator {
+	struct ASCIITranslator {
 		static constexpr C to_digit (unsigned int num) {
 			return (num <= 9 ?
 				static_cast<C>(num + '0') :
@@ -149,8 +149,10 @@ namespace dhandy {
 		}
 		static constexpr C minus() { return '-'; }
 	};
+	template <typename C>
+	using ASCIITranslatorUpcase = ASCIITranslator<C, 'A'>;
 
-	template <typename I, unsigned int Base=10, typename Tr=DefaultTranslator<char>>
+	template <typename I, unsigned int Base=10, typename Tr=ASCIITranslator<char>>
 	constexpr inline auto int_to_ary (I in) {
 		return implem::IntConversion<std::decay_t<I>, Base, Tr>::to_ary(in);
 	}
