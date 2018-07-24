@@ -1,4 +1,4 @@
-/* Copyright 2016, 2017 Michele Santullo
+/* Copyright 2016-2018 Michele Santullo
  * This file is part of "duckhandy".
  *
  * "duckhandy" is free software: you can redistribute it and/or modify
