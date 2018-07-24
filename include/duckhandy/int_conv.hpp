@@ -28,9 +28,29 @@
 #if !defined(INT_CONV_WITHOUT_HELPERS)
 #	include <string_view>
 #endif
+#include <emmintrin.h>
+#if defined(__SSE4_1__)
+#       include <smmintrin.h>
+#endif
 
 namespace dhandy {
 	namespace implem {
+		namespace {
+			[[gnu::always_inline]]
+			inline __m128i muly(const __m128i &a, const __m128i &b) {
+#if defined(__SSE4_1__)  // modern CPU - use SSE 4.1
+				return _mm_mullo_epi32(a, b);
+#else               // old CPU - use SSE 2
+				__m128i tmp1 = _mm_mul_epu32(a,b); /* mul 2,0*/
+				__m128i tmp2 = _mm_mul_epu32( _mm_srli_si128(a,4), _mm_srli_si128(b,4)); /* mul 3,1 */
+				return _mm_unpacklo_epi32(_mm_shuffle_epi32(tmp1, _MM_SHUFFLE (0,0,2,0)), _mm_shuffle_epi32(tmp2, _MM_SHUFFLE (0,0,2,0))); /* shuffle results to [63..0] and pack */
+#endif
+			}
+		} //unnamed namespace
+
+		template <typename T, typename C, unsigned int Base, typename Tr>
+		T to_integer_sse (const C* s, std::size_t l);
+
 		template <typename I, std::size_t Base>
 		constexpr std::size_t max_digit_count = static_cast<std::size_t>(
 			sprout::ceil(
@@ -89,7 +109,7 @@ namespace dhandy {
 					in = static_cast<I>(Num::cast(in) / static_cast<I>(Base));
 				} while (in);
 				if (was_negative)
-					arr.push_front(Tr::minus());
+					arr.push_front(Tr::Minus);
 				return arr;
 			}
 		};
@@ -133,21 +153,129 @@ namespace dhandy {
 					arr.push_front(Tr::to_digit(static_cast<int>(lookup[Num::abs(in) * 2 + 0] - '0')));
 				}
 				if (was_negative)
-					arr.push_front(Tr::minus());
+					arr.push_front(Tr::Minus);
 				return arr;
 			}
 		};
+
+		template <typename I, unsigned int Base, typename Tr>
+		struct AryConversion {
+			template <typename C>
+			static I from_ary (C* beg, C* end) {
+				I retval = 0;
+				I factor = 1;
+				std::size_t i = end - beg;
+				const bool was_negative = (i and *beg == Tr::Minus);
+				if (i and (*beg == Tr::Minus or *beg == Tr::Plus)) {
+					i--;
+					beg++;
+				}
+
+				while (i--) {
+					retval += Tr::from_digit(beg[i]) * factor;
+					factor *= Base;
+				}
+				return retval;
+			}
+		};
+
+		template <typename I, typename Tr, typename=typename std::enable_if<Tr::BehavesLikeASCII and std::is_integral<I>::value and not std::is_same<I, bool>::value and sizeof(I) <= sizeof(uint32_t)>::type>
+		using SelectIForSSEToInt = I;
+
+		template <typename I, unsigned int Base, typename Tr>
+		struct AryConversion<SelectIForSSEToInt<I, Tr>, Base, Tr> {
+			template <typename C> static I from_ary (C* beg, C* end) { return to_integer_sse<I, C, Base, Tr>(beg, end - beg); }
+		};
+
+		template <unsigned int Base, typename Tr>
+		struct AryConversion<bool, Base, Tr> {
+			template <typename C> static bool from_ary (C* beg, C* end) {
+				if (end == beg)
+					return false;
+				return (Tr::from_digit(*beg) ? true : false);
+			}
+		};
+
+		template <typename T>
+		[[gnu::always_inline,gnu::pure]]
+		inline T negated_ifn (T n, bool negate) {
+			//return static_cast<int32_t>(((static_cast<unsigned int>(n) - (mask bitand 1)) xor mask) bitor ((mask bitand 1) << 31));
+			return (negate ? -n : n);
+		}
+
+		template <typename T, typename C, unsigned int Base, typename Tr>
+		[[gnu::pure]]
+		T to_integer_sse (const C* s, std::size_t l) {
+			static const constexpr int base1 = static_cast<int>(Base);
+			static const constexpr int base2 = base1 * base1;
+			static const constexpr int base3 = base1 * base1 * base1;
+			static const constexpr int base4 = base2 * base2;
+			__builtin_prefetch(s, 0);
+
+			const bool was_negative = (l and *s == Tr::Minus);
+			if (l and (*s == Tr::Minus or *s == Tr::Plus)) {
+				l--;
+				s++;
+			}
+
+			switch (l) {
+			case 0:
+				return 0;
+			case 1:
+				return negated_ifn(Tr::from_digit(*s), was_negative);
+			case 2:
+				return negated_ifn(Tr::from_digit(s[0]) * base1 + Tr::from_digit(s[1]), was_negative);
+			case 3:
+				return negated_ifn(Tr::from_digit(s[0]) * base2 + Tr::from_digit(s[1]) * base1 + Tr::from_digit(s[2]), was_negative);
+			default:
+				{
+					__m128i factor = _mm_set_epi32(base3, base2, base1, 1);
+					__m128i res = _mm_set1_epi32(0);
+					const __m128i char_0 = _mm_set1_epi32(Tr::FirstDigit);
+					const __m128i char_a = _mm_set1_epi32(Tr::FirstLetter);
+					std::size_t idx = 0;
+					const std::size_t cap = l bitand -4;
+					do {
+						const __m128i digits = _mm_set_epi32(s[cap - idx - 3 - 1], s[cap - idx - 2 - 1], s[cap - idx - 1 - 1], s[cap - idx - 0 - 1]);
+						const __m128i mask = _mm_cmplt_epi32(digits, char_a);
+						const __m128i addend = _mm_add_epi32(_mm_andnot_si128(mask, _mm_sub_epi32(char_a, _mm_set1_epi32(10))), _mm_and_si128(mask, char_0));
+						res = _mm_add_epi32(res, muly(_mm_sub_epi32(digits, addend), factor));
+						factor = muly(factor, _mm_set1_epi32(base4));
+						idx += 4;
+					} while (l - idx > 3);
+
+					{
+						res = _mm_add_epi32(res, _mm_srli_si128(res, 8));
+						res = _mm_add_epi32(res, _mm_srli_si128(res, 4));
+						const std::array<int, 4> scale {1, base1, base2, base3};
+						return negated_ifn(to_integer_sse<T, C, Base, Tr>(s + idx, l - idx) + _mm_cvtsi128_si32(res) * scale[l - idx], was_negative);
+					}
+				}
+			}
+		}
 	} //namespace implem
 
-	template <typename C, C FirstLetter='a'>
+	template <typename C, C FDigit='0', C FLetter='a', C CPlus='+', C CMinus='-'>
 	struct ASCIITranslator {
+		static const constexpr bool BehavesLikeASCII = true;
+		static const constexpr C FirstDigit = FDigit;
+		static const constexpr C FirstLetter = FLetter;
+		static const constexpr C Plus = CPlus;
+		static const constexpr C Minus = CMinus;
+
 		static constexpr C to_digit (unsigned int num) {
 			return (num <= 9 ?
-				static_cast<C>(num + '0') :
+				static_cast<C>(num + FirstDigit) :
 				static_cast<C>(num + FirstLetter - 10)
 			);
 		}
-		static constexpr C minus() { return '-'; }
+
+		static constexpr int from_digit (C dig) {
+			return (dig < FirstLetter ?
+				dig - FirstDigit :
+				dig - FirstLetter + 10
+			);
+		}
 	};
 	template <typename C>
 	using ASCIITranslatorUpcase = ASCIITranslator<C, 'A'>;
@@ -155,6 +283,11 @@ namespace dhandy {
 	template <typename I, unsigned int Base=10, typename Tr=ASCIITranslator<char>>
 	constexpr inline auto int_to_ary (I in) {
 		return implem::IntConversion<std::decay_t<I>, Base, Tr>::to_ary(in);
+	}
+
+	template <typename R, typename C, unsigned int Base=10, typename Tr=ASCIITranslator<C>>
+	inline R ary_to_int (C* beg, C* end) {
+		return implem::AryConversion<R, Base, Tr>::from_ary(beg, end);
 	}
 
 #if !defined(INT_CONV_WITHOUT_HELPERS)

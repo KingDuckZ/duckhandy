@@ -25,6 +25,14 @@ template <typename T> using int_info_10 = dhandy::implem::int_info<T, 10>;
 template <typename T> using int_info_16 = dhandy::implem::int_info<T, 16>;
 template <typename T> using int_info_2 = dhandy::implem::int_info<T, 2>;
 
+namespace {
+	template <typename T, unsigned int Base>
+	void AryConversionTestHelper (const std::string_view& s, T expected) {
+		using AryConversion = dhandy::implem::AryConversion<T, Base, dhandy::ASCIITranslator<char>>;
+		CHECK(AryConversion::from_ary(s.data(), s.data() + s.size()) == expected);
+	}
+} //unnamed namespace
+
 TEST_CASE ("Check int to char array conversions", "[s2i][int_conv]") {
 	using dhandy::int_to_ary;
 	using dhandy::bt::string;
@@ -100,4 +108,32 @@ TEST_CASE ("Check int to char array conversions", "[s2i][int_conv]") {
 	num = 0xFFFFFFFFFFFFFFFF;
 	CHECK(to_string_view(int_to_ary<__int128_t, 16>(num * 0x10000 + 0xffff)) == "ffffffffffffffffffff");
 #endif
+}
+
+TEST_CASE ("Check char array to int conversions", "[i2s][int_conv]") {
+	AryConversionTestHelper<uint32_t, 10>("0", 0);
+	AryConversionTestHelper<int32_t, 10>("0", 0);
+	AryConversionTestHelper<int16_t, 10>("0", 0);
+	AryConversionTestHelper<int16_t, 16>("ff", 0xff);
+	AryConversionTestHelper<uint8_t, 16>("ff", 0xff);
+	AryConversionTestHelper<uint32_t, 36>("rs", 1000);
+	AryConversionTestHelper<uint16_t, 8>("20", 16);
+	AryConversionTestHelper<int32_t, 10>("1", 1);
+	AryConversionTestHelper<int32_t, 10>("10", 10);
+	AryConversionTestHelper<int32_t, 10>("100", 100);
+	AryConversionTestHelper<int32_t, 10>("999", 999);
+	AryConversionTestHelper<int32_t, 10>("1000", 1000);
+	AryConversionTestHelper<int32_t, 10>("1001", 1001);
+	AryConversionTestHelper<int32_t, 10>("12345", 12345);
+	AryConversionTestHelper<int32_t, 10>("123456", 123456);
+	AryConversionTestHelper<int32_t, 10>("1234567", 1234567);
+	AryConversionTestHelper<int32_t, 10>("12345678", 12345678);
+	AryConversionTestHelper<int32_t, 10>("123456789", 123456789);
+	AryConversionTestHelper<int32_t, 10>("2147483647", 2147483647);
+	AryConversionTestHelper<uint64_t, 16>("ffffffffffffffff", 0xffffffffffffffff);
+	AryConversionTestHelper<int64_t, 16>("ffffffffffffffff", 0xffffffffffffffff);
+	AryConversionTestHelper<int64_t, 16>("7fffffffffffffff", 0x7fffffffffffffff);
+	AryConversionTestHelper<int32_t, 16>("7fffffff", 0x7fffffff);
+	AryConversionTestHelper<bool, 10>("1", true);
+	AryConversionTestHelper<bool, 10>("0", false);
 }
